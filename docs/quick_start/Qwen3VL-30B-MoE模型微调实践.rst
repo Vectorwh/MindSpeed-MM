@@ -291,7 +291,7 @@ Step 4: 参数配置
         2>&1 | tee logs/train_${logfile}.log
 
 
-Step 4: 启动微调
+Step 5: 启动微调
 ::::::::::::::::::::::
 
 .. code:: bash
