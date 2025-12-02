@@ -1,0 +1,8 @@
+/* 核心：移除内容区域的宽度限制 */
+.wy-nav-content {
+    max-width: none !important;
+}
+/* 可选：增加最大宽度但保持响应式，例如在超大屏幕上限制为1200px */
+.wy-nav-content {
+    max-width: 1200px !important;
+}
