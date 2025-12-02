@@ -3,6 +3,6 @@
     max-width: none !important;
 }
 /* 可选：增加最大宽度但保持响应式，例如在超大屏幕上限制为1200px */
-.wy-nav-content {
+/* .wy-nav-content {
     max-width: 1200px !important;
-}
+} */
