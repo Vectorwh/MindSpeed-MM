@@ -16,6 +16,8 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
 
 .. toctree::
    :maxdepth: 2
+   :caption: QuickStart:
 
-   Installation/环境搭建
-
+   环境搭建
+   quick_start/环境搭建
+   quick_start/Qwen3VL-30B-MoE模型微调实践
