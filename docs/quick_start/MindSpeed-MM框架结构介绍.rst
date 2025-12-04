@@ -44,7 +44,139 @@ MindSpeed-MM 框架在构建之初，即以打造一个具备极致训练与推�
 
 MindSpeed-MM 目录结构
 ------------------------
-ddddd
+
+.. code-block:: bash
+
+    MindSpeed-MM
+    ├── checkpoint                                     权重转换模块
+    │   ├── __init__.py
+    │   ├── common                                     权重公共模块
+    │   │   ├── ......
+    │   ├── convert_cli.py                             权重转换命令行入口
+    │   ├── sora_model                                 SoRA类模型权重转换模块
+    │   │   ├── ......
+    │   └── vlm_model                                  VLM类模型权重转换模块
+    │       ├── ......
+    ├── ci                                             持续集成模块
+    │   ├── .......
+    ├── docs                                           文档模块    
+    │   ├── FAQ.md
+    │   ├── features
+    │   │   ├── ......
+    │   ├── mindspore
+    │   │   ├── ......
+    │   ├── public_address_statement.md
+    │   ├── SECURITYNOTE.md
+    │   └── user-guide
+    │       ├── ......
+    ├── evaluate_gen.py                                生成模型评估入口
+    ├── evaluate_vlm.py                                VLM模型评估入口
+    ├── examples                                       预置模型，包括模型配置、数据集配置、训练脚本、推理脚本等文件
+    │   ├── cogvideox
+    │   ├── dancegrpo
+    │   ├── deepseekocr
+    │   ├── diffsynth                                  DiffSynth相关模型支持
+    │   ├── diffusers                                  Diffusers相关模型支持
+    │   ├── glm4.5v
+    │   ├── hunyuanvideo
+    │   ├── internvl3.5
+    │   ├── mindspore                                  MindSpore相关模型支持
+    │   ├── opensora2.0
+    │   ├── opensoraplan1.5
+    │   ├── qwen3omni
+    │   ├── qwen3vl
+    │   ├── rl                                         多模态强化学习相关模型支持
+    │   ├── wan2.2
+    │   └── whisper
+    ├── inference_sora.py                              SoRA类模型推理脚本
+    ├── inference_vlm.py                               VLM类模型推理脚本
+    ├── LICENSE                                        许可证
+    ├── mindspeed_mm                                   MindSpeed-MM核心模块
+    │   ├── arguments.py                               bash脚本参数解析模块
+    │   ├── configs                                    配置模块
+    │   │   ├── config.py                              model.json/data.json/tools.json配置读取和解析模块
+    │   │   └── validate_params.json
+    │   ├── data                                       数据处理模块
+    │   │   ├── __init__.py
+    │   │   ├── data_utils                             数据读取、预处理、分桶策略等工具模块
+    │   │   ├── dataloader                             数据collactor、dataloader、sampler等模块
+    │   │   └── datasets                               多模态数据集模块
+    │   ├── mindspore                                  MindSpore适配模块
+    │   ├── models                                     模型代码
+    │   │   ├── __init__.py
+    │   │   ├── ae                                     VAE模型
+    │   │   ├── audio                                  音频处理相关模型
+    │   │   ├── common                                 公共组件，包括norm、rope、embeeding、spec等通用组件
+    │   │   ├── diffusion                              扩散模型相关组件
+    │   │   ├── omni_model.py                          全模态模型工厂类
+    │   │   ├── predictor                              DiT相关模型
+    │   │   ├── sora_model.py                          SoRA多模态生成模型工厂类
+    │   │   ├── text_decoder                           文本解码器相关模型
+    │   │   ├── text_encoder                           文本编码器相关模型
+    │   │   ├── transformers                           Transformers相关模型
+    │   │   ├── transformers_model.py                  Transformers模型工厂类
+    │   │   ├── vlm_model.py
+    │   │   ├── ......
+    │   ├── patchs                                     各类patchs模块
+    │   │   ├── __init__.py
+    │   │   ├── adaptive_clip_grad_patch.py            自适应梯度裁剪patch
+    │   │   ├── canonical_layer_patch.py
+    │   │   ├── dummy_optimizer_patch.py
+    │   │   ├── fsdp1_patches.py
+    │   │   ├── fsdp2_patches.py
+    │   │   ├── hetero_patches.py
+    │   │   ├── hetero_pipeline_patches.py
+    │   │   ├── infer_fa_patch.py
+    │   │   ├── models_patches.py
+    │   │   ├── patch_manager.py
+    │   │   ├── ring_attn_patch.py
+    │   │   ├── torch_dcp_patch.py
+    │   │   ├── training_patches.py
+    │   │   ├── ulysses_patches.py
+    │   │   └── validate_args_patch.py
+    │   ├── tasks                                       各类任务模块
+    │   │   ├── __init__.py
+    │   │   ├── evaluation
+    │   │   ├── finetune
+    │   │   ├── inference
+    │   │   └── rl
+    │   ├── tools                                       工具模块，包括pofiler、内存分析、特征提取等工具
+    │   │   ├── feature_extraction
+    │   │   ├── mem_analysis.py
+    │   │   ├── mem_profiler.py
+    │   │   ├── profiler.py
+    │   │   ├── README.md
+    │   │   └── tools.json
+    │   ├── training.py                                 训练统一入口模块
+    │   └── utils                                       通用工具模块
+    │       ├── async_offload.py
+    │       ├── auto_setting.py
+    │       ├── data_balance
+    │       ├── dpcp_utils.py
+    │       ├── ema.py
+    │       ├── extra_processor
+    │       ├── hetero_parallel.py
+    │       ├── mask_utils.py
+    │       ├── random.py
+    │       ├── security_utils
+    │       ├── transformer_model_config.py
+    │       └── utils.py
+    ├── pretrain_omni.py                                全模态模型训练入口
+    ├── pretrain_sora.py                                SoRA类模型训练入口
+    ├── pretrain_transformers.py                        Transformers类模型训练入口
+    ├── pretrain_vlm.py                                 VLM类模型训练入口
+    ├── pretrain_xxx.py                                 各类模型训练入口
+    ├── pyproject.toml                                  项目配置和构建文件
+    ├── README.md                                       首页文档
+    ├── source                                          资源文件夹，包括图片、视频等
+    ├── tests                                           测试模块
+    │   ├── conftest.py
+    │   ├── st                                          系统测试（模型级别测试）
+    │   └── ut                                          单元测试（模块/API级别测试）
+    ├── Third-Party Open Source Software Notice.txt     第三方开源软件声明
+    └── verl_plugin                                     Verl插件模块
+
+
 
 MindSpeed-MM 训练流程
 ------------------------
