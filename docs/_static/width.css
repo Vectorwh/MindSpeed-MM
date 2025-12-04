@@ -17,3 +17,5 @@
     width: 1000px; /* 设置SVG画布宽度 */
     height: 600px; /* 设置SVG画布高度 */
 }
+
+#training_flow > svg { width: 1000px }

@@ -41,6 +41,11 @@ MindSpeed-MM 框架在构建之初，即以打造一个具备极致训练与推�
 使用方式上，当前FSDP2后端的训练流程仍然嵌入在Megatron training里，因此训练脚本文件需要编写 GPT_ARGS、 MM_ARGS、OUTPUT_ARGS 等参数以通过Megatron的参数校验。当使用 FSDP2 训练时，需要传入--use-torch-fsdp2来标识使用FSDP2训练，FSDP2配置具体可参考FSDP2使用文档。
 
 
+
+MindSpeed-MM 目录结构
+------------------------
+ddddd
+
 MindSpeed-MM 训练流程
 ------------------------
 
@@ -53,6 +58,7 @@ MindSpeed-MM 执行训练的大致流程如图所示，分为训练的bash脚本
 
 
 .. mermaid::
+    :name: training_flow
     :align: center
     :caption: MindSpeed-MM训练流程图
 
@@ -105,6 +111,3 @@ MindSpeed-MM 执行训练的大致流程如图所示，分为训练的bash脚本
         B->>+C: evaluate_and_print_results
         C->>-B: return
 
-
-MindSpeed-MM 目录结构
-------------------------
