@@ -1,8 +1,7 @@
 序列并行
 ===========================
 
-Last updated: 12/04/2025.
-Autor: cxiaolong
+Last updated: 12/04/2025. Author: cxiaolong
 
 
 序列并行SP/CP（Sequence Parallelism/Context Parallelism）是一种用于训练大规模深度学习模型的并行化技术，旨在解决单个设备内存不足以容纳整个模型参数和激活值的问题。通过将模型的序列维度（如时间步长或序列长度）划分到多个设备上，序列并行能够有效地利用多台计算设备的内存和计算资源，从而实现对更大模型的训练。
