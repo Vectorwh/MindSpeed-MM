@@ -1,2 +1,61 @@
 新模型开发实践
 ===========================
+
+Last updated: 12/08/2025. Author: cxiaolong
+
+本文档介绍了如何利用 MindSpeed-MM FSDP2后端开发一个基于DiT结构的视频生成模型训练demo。
+
+
+开发流程
+------------
+
+该流程主要包含环境搭建、数据集构建、模型构建、训练入口、训练脚本、启动训练。
+
+环境搭建
+------------
+
+1. 硬件准备
+
+昇腾A3或A2加速卡，建议8卡或以上
+
+2. 参考 `环境搭建 <https://mindspeed-mm.readthedocs.io/zh-cn/latest/quick_start/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html>`_ 章节，完成HDK、CANN、PyTorch和TorchNPU基础环境搭建；
+
+3. 创建并激活Python虚拟环境；
+
+.. code:: bash
+
+    conda create -n [env_name] python=3.10
+    conda activate [env_name]
+    # 安装CANN latest下的te包，这会自动安装sympy,decorator等必装包
+    pip install [CANN_HOME_PATH]/ascend-toolkit/latest/lib64/te-*-py3-none-any.whl
+
+4. 按照下面的步骤安装MindSpeed-MM及其依赖包：
+    
+.. code:: bash
+
+    git clone https://gitcode.com/Ascend/MindSpeed-MM.git
+    git clone https://github.com/NVIDIA/Megatron-LM.git
+    cd Megatron-LM
+    git checkout core_v0.12.1
+    cp -r megatron ../MindSpeed-MM/
+    cd ..
+    cd MindSpeed-MM
+    mkdir logs data ckpt
+
+    # 安装加速库
+    git clone https://gitcode.com/Ascend/MindSpeed.git
+    cd MindSpeed
+    # checkout commit from MindSpeed core_r0.12.1
+    git checkout 93c45456c7044bacddebc5072316c01006c938f9
+    # 安装mindspeed及依赖
+    pip install -e .
+    cd ..
+
+    # 安装mindspeed mm及依赖
+    pip install -e .
+
+
+数据集构建
+------------
+
+

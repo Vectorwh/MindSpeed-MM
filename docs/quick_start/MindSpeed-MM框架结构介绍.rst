@@ -1,6 +1,8 @@
 MindSpeed-MM框架结构介绍
 ===========================
 
+Last updated: 12/08/2025. Author: cxiaolong
+
 MindSpeed-MM整体架构
 --------------------
 

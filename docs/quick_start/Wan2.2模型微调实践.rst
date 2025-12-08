@@ -1,6 +1,8 @@
 Wan2.2模型微调实践
 ===========================
 
+Last updated: 12/08/2025. Author: cxiaolong
+
 本文档介绍了如何使用 MindSpeed-MM 对 Wan2.2-T2V-A14B 模型进行微调的实践步骤。
 
 背景介绍
@@ -28,7 +30,7 @@ Step 1: 搭建开发环境
 
 昇腾A3或A2加速卡，建议8卡或以上
 
-2. 参考 `环境搭建 <docs/环境搭建.rst>`_ 章节，完成HDK、CANN、PyTorch和TorchNPU基础环境搭建；
+2. 参考 `环境搭建 <https://mindspeed-mm.readthedocs.io/zh-cn/latest/quick_start/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA.html>`_ 章节，完成HDK、CANN、PyTorch和TorchNPU基础环境搭建；
 
 3. 创建并激活Python虚拟环境；
 
