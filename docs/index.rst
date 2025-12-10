@@ -20,7 +20,14 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
 
    quick_start/环境搭建
    quick_start/快速实践
-   quick_start/开发体验
+
+.. toctree::
+   :maxdepth: 2
+   :caption: 开发指南:
+
+   dev_guide/MindSpeed-MM框架结构介绍
+   dev_guide/模型迁移
+   dev_guide/新模型开发
 
 .. toctree::
    :maxdepth: 1
@@ -62,4 +69,3 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    :caption: FAQ:
 
    faq/常见问题
-
