@@ -9,11 +9,11 @@ Last updated: 12/08/2025. Author: cxiaolong
 开发流程
 ------------
 
-该流程主要包含环境搭建、数据集构建、模型构建、训练入口、训练脚本、启动训练。
+该流程主要包含环境搭建、数据集构建、模型构建、配置文件、训练入口、训练脚本、启动训练。
 
 
-环境搭建
-------------
+Step1: 环境搭建
+-------------------
 
 1. 硬件准备
 
@@ -56,7 +56,7 @@ Last updated: 12/08/2025. Author: cxiaolong
     pip install -e .
 
 
-Step1: 数据集构建
+Step2: 数据集构建
 --------------------
 
 准备demo数据
@@ -239,8 +239,8 @@ MindSpeed-MM 提供了丰富的DataLoader组件，调用入口为 ``mindspeed_mm
 
 本教程选择使用 ``sampler`` 类型的DataLoader
 
-模型构建
--------------
+Step3: 模型构建
+------------------
 
 MindSpeed-MM 中提供了一个SoRAModel作为所有扩散视频生成模型的组合类，模型继承关系如下。SoRAModel是一个组合类，可以实例化成Wan、HunyuanVideo等具体的模型，由TextEncoder、PredictModel、DiffusionModel、AEModel多个部件组成。
 
@@ -248,7 +248,7 @@ MindSpeed-MM 中提供了一个SoRAModel作为所有扩散视频生成模型的�
     :width: 800px
     :align: center
 
-本教程将构建一个 ``CustomModel`` 用于表示视频生成模型的组合类，它由 ``PrediciModel(CustomDiT)``, ``TextEncoder(UMT5)``, ``AEModel(WanVideoVAE)``, ``DiffusionModel(WanFlowMatchScheduler)`` 四部分组成。
+本教程将新构建一个 ``CustomModel`` 用于表示自定义的视频生成模型的组合类，它由 ``PrediciModel(CustomDiT)``, ``TextEncoder(UMT5)``, ``AEModel(WanVideoVAE)``, ``DiffusionModel(WanFlowMatchScheduler)`` 四部分组成。
 
 CustomModel构建
 ^^^^^^^^^^^^^^^^^^^^^
@@ -321,4 +321,460 @@ CustomModel构建
 
 .. note:: 
     CustomModel需要继承 ``FSDP2Mixin`` ``WeightInitMixin`` 以提供FSDP2和权重初始化能力。
-    
+
+    * FSDP2Mixin: 提供了 ``fully_shared`` 的基础能力；
+    * WeightInitMixin: 提供了权重初始化能力，当使用FSDP2 ``meta-device`` 初始化后，需要重初始化权重。
+
+
+CustomDiT构建
+^^^^^^^^^^^^^^^^^^^^^
+
+参考WanVideo的模型结构，自行实现一个自定义的DiT结构如下：
+
+新建 ``mindspeed_mm/models/predictor/dits/custom_dit.py``
+
+.. code:: python
+
+    from typing import Tuple, Optional, Dict, Any, Union
+    import math
+
+    from einops import rearrange
+    import torch
+    from torch import nn
+    from diffusers.models.normalization import FP32LayerNorm
+    from diffusers.models.attention import FeedForward
+    from diffusers.models.transformers.transformer_wan import (
+        WanRotaryPosEmbed,
+        WanTimeTextImageEmbedding,
+    )
+    from megatron.legacy.model.enums import AttnType
+    from mindspeed_mm.models.common.module import MultiModelModule
+    from mindspeed_mm.models.predictor.dits.wan_dit import WanVideoParallelAttention
+
+
+    class CustomDiT(MultiModelModule):
+        def __init__(
+            self,
+            num_layers: int = 40,
+            num_attention_heads: int = 40,
+            attention_head_dim: int = 128,
+            patch_size: Tuple[int, ...] = (1, 2, 2),
+            in_channels: int = 16,
+            out_channels: int = 16,
+            text_dim: int = 4096,
+            freq_dim: int = 256,
+            ffn_dim: int = 13824,
+            rope_max_seq_len: int = 1024
+        ) -> None:
+            super().__init__()
+            self.patch_size = patch_size
+            inner_dim = num_attention_heads * attention_head_dim
+            out_channels = out_channels or in_channels
+
+            # 1. Patch & position embedding
+            self.rope = WanRotaryPosEmbed(attention_head_dim, patch_size, rope_max_seq_len)
+            self.patch_embedding = nn.Conv3d(in_channels, inner_dim, kernel_size=patch_size, stride=patch_size)
+
+            # 2. Condition embeddings
+            self.condition_embedder = WanTimeTextImageEmbedding(
+                dim=inner_dim,
+                time_freq_dim=freq_dim,
+                time_proj_dim=inner_dim * 6,
+                text_embed_dim=text_dim,
+            )
+
+            # 3. DiT blocks
+            self.blocks = nn.ModuleList(
+                [
+                    CustomDiTBlock(
+                        dim=inner_dim,
+                        ffn_dim=ffn_dim,
+                        num_heads=num_attention_heads,
+                        attention_head_dim=attention_head_dim
+                    )
+                    for _ in range(num_layers)
+                ]
+            )
+
+            # 4. Output norm & projection
+            self.norm_out = FP32LayerNorm(inner_dim, elementwise_affine=False)
+            self.proj_out = nn.Linear(inner_dim, out_channels * math.prod(patch_size))
+            self.scale_shift_table = nn.Parameter(torch.randn(1, 2, inner_dim) / inner_dim**0.5)
+
+        def forward(
+            self,
+            hidden_states: torch.Tensor,
+            timestep: torch.LongTensor,
+            encoder_hidden_states: torch.Tensor,
+        ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
+            rotary_emb = self.rope(hidden_states)
+            
+            # Patch embedding
+            hidden_states = self.patch_embedding(hidden_states)
+            batch_size, _, frames, height, width = hidden_states.shape
+            
+            # Patchify
+            hidden_states, grid_sizes = self.patchify(hidden_states)
+
+            # Get conditioning embeddings
+            temb, timestep_proj, encoder_hidden_states, _ = self.condition_embedder(
+                timestep=timestep,
+                encoder_hidden_states=encoder_hidden_states
+            )
+            
+            # Reshape timestep projection
+            timestep_proj = timestep_proj.unflatten(1, (6, -1))  # [batch_size, 6, inner_dim]
+
+            # 4. Transformer blocks
+            for block in self.blocks:
+                hidden_states = block(
+                    hidden_states=hidden_states,
+                    encoder_hidden_states=encoder_hidden_states,
+                    temb=timestep_proj,
+                    rotary_emb=rotary_emb
+                )
+
+            # 5. Output norm, projection & unpatchify
+            shift, scale = (self.scale_shift_table.to(temb.device) + temb.unsqueeze(1)).chunk(2, dim=1)
+            hidden_states = (self.norm_out(hidden_states.float()) * (1 + scale) + shift).type_as(hidden_states)
+            hidden_states = self.proj_out(hidden_states)
+
+            # Unpatchify
+            return self.unpatchify(hidden_states, frames, height, width)
+
+        def patchify(self, embs: torch.Tensor):
+            # b c f h w -> b (f h w) c
+            b, c, f, h, w = embs.shape
+            grid_sizes = (f, h, w)  # Store original spatial dimensions
+            patch_out = rearrange(embs, "b c f h w -> b (f h w) c").contiguous()
+            return patch_out, grid_sizes
+
+        def unpatchify(self, embs: torch.Tensor, frames: int, height: int, width: int):
+            # b (f h w) (p0 p1 p2 c) -> b c (f*p0) (h*p1) (w*p2)
+            return rearrange(
+                embs,
+                "b (f h w) (x y z c) -> b c (f x) (h y) (w z)",
+                f=frames,
+                h=height,
+                w=width,
+                x=self.patch_size[0],
+                y=self.patch_size[1],
+                z=self.patch_size[2],
+            )
+
+
+    class CustomDiTBlock(nn.Module):
+        def __init__(
+            self,
+            dim: int,
+            ffn_dim: int,
+            num_heads: int,
+            attention_head_dim: int,
+            cross_attn_norm: bool = False,
+            added_kv_proj_dim: Optional[int] = None,
+        ):
+            super().__init__()
+            # 1. Self-attention
+            self.norm1 = FP32LayerNorm(dim, elementwise_affine=False)
+            self.attn1 = WanVideoParallelAttention(
+                query_dim=dim,
+                heads=num_heads,
+                hidden_size=attention_head_dim,
+                attention_type=AttnType.self_attn,
+            )
+
+            # 2. Cross-attention
+            self.norm2 = FP32LayerNorm(dim, elementwise_affine=True) if cross_attn_norm else nn.Identity()
+            self.attn2 = WanVideoParallelAttention(
+                query_dim=dim,
+                heads=num_heads,
+                hidden_size=attention_head_dim,
+                attention_type=AttnType.cross_attn,
+            )
+
+            # 3. Feed-forward
+            self.ffn = FeedForward(dim, inner_dim=ffn_dim, activation_fn="gelu-approximate")
+            self.norm3 = FP32LayerNorm(dim, eps=eps, elementwise_affine=False)
+
+            self.scale_shift_table = nn.Parameter(torch.randn(1, 6, dim) / dim**0.5)
+
+        def forward(
+            self,
+            hidden_states: torch.Tensor,
+            encoder_hidden_states: torch.Tensor,
+            temb: torch.Tensor,
+            rotary_emb: torch.Tensor,
+        ) -> torch.Tensor:
+            # Split scale-shift table into components
+            shift_msa, scale_msa, gate_msa, c_shift_msa, c_scale_msa, c_gate_msa = (
+                self.scale_shift_table.to(temb.device) + temb.float()
+            ).chunk(6, dim=1)
+
+            # 1. Self-attention
+            norm_hidden_states = (self.norm1(hidden_states.float()) * (1 + scale_msa) + shift_msa).type_as(hidden_states)
+            attn_output = self.attn1(
+                norm_hidden_states, 
+                rotary_emb=rotary_emb 
+            )
+            hidden_states = (hidden_states.float() + attn_output * gate_msa).type_as(hidden_states)
+
+            # 2. Cross-attention
+            norm_hidden_states = self.norm2(hidden_states.float()).type_as(hidden_states)
+            attn_output = self.attn2(
+                norm_hidden_states, 
+                encoder_hidden_states=encoder_hidden_states
+            )
+            hidden_states = hidden_states + attn_output
+
+            # 3. Feed-forward
+            norm_hidden_states = (self.norm3(hidden_states.float()) * (1 + c_scale_msa) + c_shift_msa).type_as(
+                hidden_states
+            )
+            ff_output = self.ffn(norm_hidden_states)
+            hidden_states = (hidden_states.float() + ff_output.float() * c_gate_msa).type_as(hidden_states)
+
+            return hidden_states
+
+构建好CustomDiT后，需要将模型注册到PredictModel。
+
+Step4: 配置文件
+-----------------
+
+配置文件主要包括模型配置(model.json)，数据配置(data.json)，FSDP2配置(fsdp2.yaml)，配置文件内容可以参考 `配置说明 <https://mindspeed-mm.readthedocs.io/zh-cn/latest/config/基础配置.html>`_ ,
+
+新建 ``examples/custom_model/model.json`` ``examples/custom_model/data.json`` ``examples/custom_model/fsdp2.yaml``
+
+model.json
+^^^^^^^^^^^^^
+
+.. code:: json
+
+    {
+        "diffusion": {
+            "model_id": "wan_flow_match_scheduler",
+            "num_train_timesteps": 1000,
+            "shift": 5,
+            "sigma_min": 0.0,
+            "extra_one_step": true
+        },
+        "predictor": {
+            "model_id": "custom_dit",
+            "patch_size": [1, 2, 2],
+            "text_len": 512,
+            "in_dim": 48,
+            "hidden_size": 3072,
+            "ffn_dim": 14336,
+            "freq_dim": 256,
+            "text_dim": 4096,
+            "img_dim": 1280,
+            "out_dim": 48,
+            "num_heads": 24,
+            "num_layers": 30,
+            "pipeline_num_layers": [30],
+            "qk_norm": true,
+            "qk_norm_type": "rmsnorm",
+            "cross_attn_norm": true,
+            "eps": 1e-6,
+            "max_seq_len": 1024,
+            "attention_async_offload": false,
+            "use_fused_rmsnorm":true,
+            "seperated_timestep": true
+        },
+        "text_encoder": {
+            "model_id": "UMT5",
+            "hub_backend": "hf",
+            "from_pretrained": "./ckpt/Wan2.2-T2V-5B-Diffusers/text_encoder/",
+            "dtype": "bf16"
+        },
+        "ae": {
+            "model_id": "wan_video_vae",
+            "from_pretrained": "Wan2.2-T2V-5B-Diffusers/vae",
+            "dtype": "bf16",
+            "enable_tiling": false,
+            "tiling_param": {
+                "tile_sample_min_height": 256,
+                "tile_sample_min_width": 256,
+                "tile_sample_stride_height": 192,
+                "tile_sample_stride_width": 192
+            },
+            "norm_latents": true,
+            "norm_mode": "channel_specified_shift_scale",
+            "do_sample": false,
+            "i2v_processor": {
+                "processor_id": "wan_ti2v_processor",
+                "i2v_vae_encode_tiling": false
+            }
+        }
+    }
+
+data.json
+^^^^^^^^^^^^^
+
+.. code:: json
+
+    {
+        "dataset_param": {
+            "video_folder": "/data/pixabay_v2/",
+            "data_json": "/data/annotation.json",
+            "num_frames": 49,
+            "max_height": 480,
+            "max_width": 832,
+            "max_hxw": 399360,
+            "tokenizer_config": 
+            {
+                "autotokenizer_name": "AutoTokenizer",
+                "hub_backend": "hf",
+                "from_pretrained": "Wan2.2-TI2V-5B-Diffusers/tokenizer",
+                "model_max_length": 512
+            }
+        },
+        "dataloader_param": {
+            "dataloader_mode": "sampler",
+            "sampler_type": "SequentialSampler",
+            "drop_last": true,
+            "pin_memory": true,
+            "group_frame": false,
+            "group_resolution": false
+        }
+    }
+
+fsdp2.yaml
+^^^^^^^^^^^^^
+
+.. code:: yaml
+
+    sharding_size: 8
+    sub_modules_to_wrap:
+    - predictor.blocks.{*}
+    - predictor.head
+    reshard_after_forward: True
+    param_dtype: "bf16"
+    reduce_dtype: "fp32"
+    ignored_modules:
+    - ae
+    - text_encoder
+    cast_forward_inputs: True
+    recompute_modules:
+    - predictor.blocks.{*}
+    num_to_forward_prefetch: 0
+    num_to_backward_prefetch: 0
+    offload_to_cpu: False
+
+Step5: 训练入口
+--------------------
+
+新建 ``mindspeed_mm/pretrain_custom.py`` ， 训练入口采用Megatron范式，主要需要实现以下函数：
+
+
+==================================   ===== 
+func                                 描述
+==================================   ===== 
+model_provider                       模型构建函数，返回模型实例
+get_batch                            获取batch输入数据，forward_step中使用
+loss_func                            计算模型report损失用于打印，并把真实loss往下传递，用于Megatron后续处理
+forward_step                         模型前向，返回tuple类型，值为（模型前向输出，loss_func）
+train_valid_test_datasets_provider   构建数据加载器
+==================================   ===== 
+
+.. code:: python
+
+    import torch
+    import torch_npu
+
+    from megatron.core import mpu
+    from megatron.core.enums import ModelType
+    from megatron.training import get_args, print_rank_0
+    from megatron.training.utils import average_losses_across_data_parallel_group
+
+    import mindspeed.megatron_adaptor
+    from mindspeed_mm.configs.config import mm_extra_args_provider
+    from mindspeed_mm.training import pretrain
+    from mindspeed_mm.data import build_mm_dataloader
+    from mindspeed_mm.data.datasets.custom_t2v_dataset import CustomT2VDataset
+    from mindspeed_mm.data.data_utils.utils import build_iterations
+
+
+    def model_provider(pre_process=True, post_process=True):
+        """Builds custom model."""
+        args = get_args()
+        print_rank_0("building Custom model ...")
+
+        model = CustomModel(args.mm.model)
+
+        return model
+
+
+    def get_batch(data_iterator):
+        """Generate a batch."""
+        if data_iterator is not None:
+            batch = next(data_iterator, None)
+            for k, v in batch.items():
+                if isinstance(v, torch.Tensor):
+                    batch[k] = v.to(torch_npu.npu.current_device())
+        else:
+            return None
+
+
+    def loss_func(output_tensor):
+        """Loss function."""
+        loss = output_tensor.mean()
+        reporting_loss = average_losses_across_data_parallel_group([loss])
+        loss = loss.unsqueeze(0)
+        return loss, {"loss": reporting_loss[0]}
+
+
+    def forward_step(data_iterator, model):
+        """Forward step."""
+        batch = get_batch(data_iterator)
+        output_tensor = model(**batch)
+        return output_tensor, loss_func
+
+
+    def train_valid_test_datasets_provider(train_val_test_num_samples):
+        """Build train, valid, and test datasets."""
+        args = get_args()
+        data_config = args.mm.data
+        train_dataset = CustomT2VDataset(data_config.to_dict())
+        # build_mm_dataset(data_config.dataset_param)
+
+        train_dataloader = build_mm_dataloader(
+            train_dataset,
+            data_config.dataloader_param,
+            process_group=mpu.get_data_parallel_group(),
+            consumed_samples=args.consumed_train_samples,
+            dataset_param=data_config.dataset_param,
+        )
+        data_iterator, _, _ = build_iterations(train_dl=train_dataloader)
+        return data_iterator, None, None
+
+
+    if __name__ == "__main__":
+        train_valid_test_datasets_provider.is_distributed = True
+        pretrain(
+            train_valid_test_datasets_provider,
+            model_provider,
+            ModelType.encoder_or_decoder,
+            forward_step,
+            extra_args_provider=mm_extra_args_provider,
+            args_defaults={"dataloader_type": "external", "vision_pretraining": False, "curr_forward_iteration": 0},
+        )
+
+Step6: 训练脚本
+-----------------
+
+
+
+
+
+
+
+
+
+Step7: 启动训练
+------------------
+
+执行下面脚本进行模型训练
+
+.. code:: bash
+
+    bash examples/custom_model/pretrain.sh

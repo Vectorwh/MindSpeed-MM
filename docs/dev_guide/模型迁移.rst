@@ -19,10 +19,19 @@ Last updated: 12/08/2025. Author: zs-derrick
 
 下图是模型迁移的总体流程图介绍：
 
+.. image:: ../_static/dev_guide/migration/migration.png
+
+为系统性地完成上述适配工作，我们将模型迁移过程分解为四个关键流程：
+
+1. ​**迁移准备** ​：基于业务需求选取合适模型，确保其在第三方平台（如GPU）可成功运行并建立性能/精度基线；准备NPU环境，使用 `迁移分析工具 <https://www.hiascend.com/document/detail/zh/Pytorch/720/ptmoddevg/trainingmigrguide/PT_LMTMOG_0007.html#ZH-CN_TOPIC_0000002503407585__section56695751919>`__ 采集模型算子清单，分析NPU算子支持度，针对未支持算子制定替换或开发适配方案。
+2. ​**模型迁移** ​：通过 `模型脚本迁移 <https://www.hiascend.com/document/detail/zh/Pytorch/720/ptmoddevg/trainingmigrguide/PT_LMTMOG_0012.html>`__ ，针对模型结构、数据工程、分布式训练策略等关键模块进行迁移分析。
+3. ​**精度对齐** ​：系统性分析精度误差来源，从超参数、数据处理、模型/优化器、计算精度等维度确保迁移前后精度一致性
+4. ​**性能调优** ​：借助 `性能调优工具 <https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/850alpha001/devaids/Profiling/atlasprofiling_16_0001.html>`__ 对模型进行系统性性能分析，定位瓶颈模块；基于 `性能调优方法 <https://www.hiascend.com/document/detail/zh/Pytorch/720/ptmoddevg/trainingmigrguide/performance_tuning_0024.html>`__ 从NPU亲和适配、内存优化、通信优化、调度优化等多个维度实施针对性优化。
+
 MM架构迁移指南
 -----------------
 
-MindSpeed-MM采用模块化架构设计，以训练入口脚本为核心，通过配置驱动实现多模态模型的统一训练，其核心特点是​**训练逻辑与模型实现解耦**​——主训练流程在`pretrain_xxx.py`中固定，而模型结构、数据处理和损失计算等关键组件通过回调函数注入，使得框架具备高度可扩展性。迁移时需要重点理解**回调接口的职责划分**与​**配置文件的组织方式**​，这是将自定义模型接入框架的关键。
+MindSpeed-MM采用模块化架构设计，以训练入口脚本为核心，通过配置驱动实现多模态模型的统一训练，其核心特点是​**训练逻辑与模型实现解耦**​——主训练流程在`pretrain_xxx.py`中固定，而模型结构、数据处理和损失计算等关键组件通过回调函数注入，使得框架具备高度可扩展性。
 
 🎯 快速开始
 :::::::::::::
@@ -327,6 +336,8 @@ MindSpeed-MM 同时提供了一套优化的多模态数据集处理模块，包�
 
 🧩模型结构迁移
 :::::::::::::::
+
+.. image:: ../_static/dev_guide/migration/model.png
 
 在 MindSpeed-MM 框架中，所有训练模型都通过标准化的入口函数进行构建和执行：`model_provider`构造模型，`forward_step`执行前向结果，`loss_func`计算训练损失。
 
@@ -698,7 +709,7 @@ MindSpeed-MM 支持通过 YAML 配置文件灵活管理 FSDP2 训练策略，实
 
 针对模型结构复杂或特殊场景的定制化需求，我们提供了灵活的自定义切分方案。用户可以通过调用`FSDP2Mixin`提供的`fully_shard`接口，实现完全按需设计的切分和优化策略，获得对模型分布式训练的精细化控制能力，从而有效应对各类复杂架构与高性能训练场景。下图显示了FSDP2Mixin类的核心组成，用户可以根据各自需求对其方法进行重写：
 
-![](https://wiki.huawei.com/vision-file-storage/api/file/download/upload-v2/WIKI202511269178174/34700228/d231e66c75c64a5da076cfb9130361d0.png)
+.. image:: ../_static/dev_guide/migration/fsdp2.png
 
 **自定义fully_shard实现示例**
 
@@ -728,5 +739,189 @@ MindSpeed-MM 支持通过 YAML 配置文件灵活管理 FSDP2 训练策略，实
 精度对齐
 -------------
 
-精度对齐是模型迁移的核心验证环节，旨在确保从GPU平台迁移至MindSpeed MM中的模型在**功能正确性、数值精度和训练收敛性**三个维度上与原始模型保持一致。本章节中构建了一套系统化的精度对齐方法论，如下图所示：
+概述
+:::::::::::::
 
+精度对齐是模型迁移的核心验证环节，旨在确保从GPU平台迁移至MindSpeed-MM中的模型在 **功能正确性、数值精度和训练收敛性** 三个维度上与原始模型保持一致，其核心流程如下所示：
+
+.. image:: ../_static/dev_guide/migration/precision.png
+
+1. **原仓在GPU/NPU上精度对齐** ：固定所有随机量后（seed、数据顺序、dropout等），对齐 **原仓GPU与NPU** 精度。此步骤验证算子精度，为MindSpeed-MM模型提供基准参考。
+2. **原仓和MM在NPU上的单卡减层对齐** ：以 **原仓NPU** 训练结果为基准，对齐减少模型层数、单卡训练时的精度，确保模型结构迁移正确。
+3. **原仓和MM在NPU上的多卡分布式训练对齐** ：以 **原仓NPU** 训练结果为基准，对齐整网、多卡分布式训练时的精度，验证分布式策略的正确性。
+
+对齐流程
+:::::::::::::
+
+必查项清单
+^^^^^^^^^^^^^^^^^
+
+.. raw:: html
+
+    <a id="precesion_checklist"></a>
+
+    <table>
+    <thead>
+        <tr>
+        <th>项目</th>
+        <th>说明</th>
+        <th>检查方法</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+        <td><strong>版本对齐</strong></td>
+        <td>确保第三方库版本一致</td>
+        <td>
+            执行 <code>pip list</code> 检查 transformers、diffusers 等版本
+        </td>
+        </tr>
+        <tr>
+        <td><strong>关闭私有格式</strong></td>
+        <td>统一计算格式</td>
+        <td>
+            对比原仓和MM精度时，在运行开始处添加 <code>torch.npu.config.allow_internal_format = False</code></br>MM仓库已默认添加
+        </td>
+        </tr>
+        <tr>
+        <td><strong>开启确定性计算</strong></td>
+        <td>确保结果可复现</td>
+        <td>
+            安装<code> pip install mindstudio-probe</code>，
+    <pre># 使用
+    from msprobe.pytorch import seed_all
+    seed_all(is_gpu=False, mode=True)</pre>
+        </td>
+        </tr>
+        <tr>
+        <td><strong>开启HCCL确定性</strong></td>
+        <td>确保分布式通信可复现</td>
+        <td>
+            在启动脚本中添加 <code>export HCCL_DETERMINISTIC=TRUE</code>
+        </td>
+        </tr>
+        <tr>
+        <td><strong>优化器对齐</strong></td>
+        <td>使用相同优化器配置</td>
+        <td>
+            MindSpeed-MM默认使用AdamW，建议原仓和MM使用相同的优化器
+        </td>
+        </tr>
+        <tr>
+        <td><strong>通信dtype对齐</strong></td>
+        <td>统一梯度通信精度</td>
+        <td>
+        MM中梯度的all reduce操作在多卡进行通信时，使用fp32数据类型，</br>在deepspeed中，默认情况下是以原始参数类型通信，需在其配置中添加<code>"communication_data_type": "fp32"</code>
+        </td>
+        </tr>
+        <tr>
+        <td><strong>初始权重对齐</strong></td>
+        <td>确保权重初始化一致</td>
+        <td>
+            验证原仓和MM的权重加载逻辑，尤其当<strong>部分模块随机初始化，部分模块参数冻结</strong>的场景
+        </td>
+        </tr>
+    </tbody>
+    </table>
+
+配置对齐
+^^^^^^^^^^^^^^^^^
+.. raw:: html
+
+    <a id="precesion_config"></a>
+    <table>
+    <thead>
+        <tr>
+        <th>参数分类</th>
+        <th>项目</th>
+        <th>MM框架配置</th>
+        <th>说明</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+        <td rowspan="10"><strong>超参数配置</strong></td>
+        <td><strong>学习率</strong></td>
+        <td><code>--lr</code></td>
+        <td>设置初始学习率</td>
+        </tr>
+        <tr>
+        <td><strong>学习率调度器类型</strong></td>
+        <td><code>--lr-decay-style</code></td>
+        <td>指定学习率衰减策略</td>
+        </tr>
+        <tr>
+        <td><strong>学习率预热比例</strong></td>
+        <td><code>--lr-warmup-fraction</code></td>
+        <td>学习率预热阶段占比</td>
+        </tr>
+        <tr>
+        <td><strong>训练步长</strong></td>
+        <td><code>--train-iters</code></td>
+        <td>训练的总迭代步数</td>
+        </tr>
+        <tr>
+        <td><strong>GBS（全局批次大小）</strong></td>
+        <td><code>$MBS*$GRAD_ACC_STEP*$DP</code></td>
+        <td>GBS = 微批次大小 × 梯度累积步数 × 数据并行度</td>
+        </tr>
+        <tr>
+        <td><strong>梯度裁剪</strong></td>
+        <td><code>--clip-grad</code></td>
+        <td>梯度裁剪阈值，防止梯度爆炸</td>
+        </tr>
+        <tr>
+        <td><strong>优化器类型</strong></td>
+        <td><code>--optimizer-selection</code></td>
+        <td>选择优化器类型</td>
+        </tr>
+        <tr>
+        <td><strong>权重衰减</strong></td>
+        <td><code>--weight-decay</code></td>
+        <td>权重衰减系数，默认值为0</td>
+        </tr>
+        <tr>
+        <td><strong>Adam Beta1</strong></td>
+        <td><code>--adam-beta1</code></td>
+        <td>Adam优化器的一阶矩估计指数衰减率，默认0.9</td>
+        </tr>
+        <tr>
+        <td><strong>Adam Beta2</strong></td>
+        <td><code>--adam-beta2</code></td>
+        <td>Adam优化器的二阶矩估计指数衰减率，默认0.999</td>
+        </tr>
+        <tr>
+        <td rowspan="4"><strong>确定性计算配置</strong></td>
+        <td><strong>随机种子</strong></td>
+        <td><code>--seed</code></td>
+        <td>设置随机种子以确保实验可复现</td>
+        </tr>
+        <tr>
+        <td><strong>确定性计算配置</strong></td>
+        <td><code>--use-deter-comp</code></td>
+        <td>启用确定性计算，确保每次运行结果一致</td>
+        </tr>
+        <tr>
+        <td><strong>HCCL确定性</strong></td>
+        <td><code>export HCCL_DETERMINISTIC=TRUE</code></td>
+        <td>确保分布式通信结果可复现</td>
+        </tr>
+        <tr>
+        <td><strong>矩阵乘法优化</strong></td>
+        <td><code>export CLOSE_MATMUL_K_SHIFT=1</code></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><strong>数据加载配置</strong></td>
+        <td><strong>采样方式</strong></td>
+        <td><code>examples/xxx/data.json中设置dataloader的shuffle为false</code></td>
+        <td>在数据配置文件中控制是否打乱数据顺序</td>
+        </tr>
+    </tbody>
+    </table>
+
+
+精度工具使用
+^^^^^^^^^^^^^^^^^
+
+在解决模型训练中的精度问题时，可借助 `精度工具 msprobe <https://gitcode.com/Ascend/mstt/tree/master/debug/accuracy_tools/msprobe>`__\ 来对不同功能和场景分析和定位。
