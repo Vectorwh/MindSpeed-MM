@@ -14,18 +14,22 @@ PyTorch的完全分片数据并行（FSDP）旨在提供一个高性能的即时
 基于上述局限性，FSDP2移除了FlatParameter，采用沿0维分片的DTensor表示分片参数，支持对单个参数的便捷操作、无需通信的分片状态字典，以及更简化的初始化流程；同时FSDP2实现了一种改进的内存管理系统，通过避免使用recordStream来降低并确定Device内存使用，且无需任何Host同步。
 
 .. image:: ../_static/features/fsdp2/compare_fsdp1_fsdp2.png
+    :width: 70%
+    :align: center
 
 核心工作机制
 ------------
 
-1. **参数切分** ：在模型初始化时， ``fully_shard`` 将 ``model.parameters()`` 从普通 ``torch.Tensor`` 按照rank号进行进行切分，并转换为 ``DTensor`` 格式，这些参数会根据设备网格（device mesh）被移动到相应的device上。
+1. **参数切分**：在模型初始化时， ``fully_shard`` 将 ``model.parameters()`` 从普通 ``torch.Tensor`` 按照rank号进行进行切分，并转换为 ``DTensor`` 格式，这些参数会根据设备网格（device mesh）被移动到相应的device上。
 2. **前反向传播中的参数聚合与重切分**：
 
-   * ​**参数聚合**​： ``forward/backward`` 的 ``pre_hook`` 负责聚合所有参数，将 ``model.parameters()`` 从 ``DTensor`` 转换回普通 ``torch.Tensor``
-   * **参数重切分** ： ``forward/backward`` 的计算完成后， ``post_hook`` 释放未分片的参数（无需通信），并重新将参数转换为 ``DTensor``
+   * 参数聚合​： ``forward/backward`` 的 ``pre_hook`` 负责聚合所有参数，将 ``model.parameters()`` 从 ``DTensor`` 转换回普通 ``torch.Tensor``
+   * 参数重切分： ``forward/backward`` 的计算完成后， ``post_hook`` 释放未分片的参数（无需通信），并重新将参数转换为 ``DTensor``
 3. **自底向上的分组策略** ：在复杂模型中 ``fully_shard`` 应遵循自底向上的应用顺序，例如：应先对每个TransformerLayer层应用 ``fully_shard`` ，再应用于root模型
 
 .. image:: ../_static/features/fsdp2/fsdp_workflow.png
+    :width: 70%
+    :align: center
 
 使用方式
 --------
@@ -40,7 +44,7 @@ PyTorch的完全分片数据并行（FSDP）旨在提供一个高性能的即时
    from mindspeed_mm.models.common.module import MultiModalModule
    from mindspeed_mm.models.transformers.base_model import FSDP2Mixin, WeightInitMixin
 
-   class YourModel(MultiModalModule, FSDP2Mixin, WeightInitMixin)：
+   class YourModel(MultiModalModule, FSDP2Mixin, WeightInitMixin):
        ...
 
 启动命令配置
@@ -62,137 +66,8 @@ PyTorch的完全分片数据并行（FSDP）旨在提供一个高性能的即时
 -  ``--use-torch-fsdp2``\ ：启用FSDP2训练模式
 -  ``--fsdp2-config-path``\ ：指定FSDP2配置文件路径
 
-配置文件参数说明
-~~~~~~~~~~~~~~~~
+其中，FSDP2配置文件中参数说明见：:ref:`FSDP2参数介绍<fsdp2-config>`
 
-.. raw:: html
-
-    <a id="fsdp2_args"></a>
-
-    <table>
-    <thead>
-        <tr style="background-color: #f5f5f5;">
-        <th style="text-align: left;">参数分类</th>
-        <th style="text-align: left;">参数名称</th>
-        <th style="text-align: left;">描述</th>
-        <th style="text-align: left;">取值</th>
-        <th style="text-align: left;">默认值</th>
-        <th style="text-align: left;">注意事项</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-        <td rowspan="5" style="vertical-align: middle; font-weight: bold;">基本配置</td>
-        <td><code>sharding_size</code></td>
-        <td>模型并行分片大小</td>
-        <td><code>auto</code>或整数值</td>
-        <td>1</td>
-        <td><code>auto</code>表示<code>world_size</code>大小</td>
-        </tr>
-        <tr>
-        <td><code><a href="https://docs.pytorch.org/docs/2.7/distributed.fsdp.fully_shard.html#torch.distributed.fsdp.MixedPrecisionPolicy">param_dtype</code></td>
-        <td>参数存储和计算数据类型</td>
-        <td><code>bf16</code>, <code>fp16</code>, <code>fp32</code></td>
-        <td>模型dtype</td>
-        <td>训练精度设置</td>
-        </tr>
-        <tr>
-        <td><code>reduce_dtype</code></td>
-        <td>梯度通信数据类型</td>
-        <td><code>bf16</code>, <code>fp16</code>, <code>fp32</code></td>
-        <td><code>none</code></td>
-        <td>通信精度设置</td>
-        </tr>
-        <tr>
-        <td><code>output_dtype</code></td>
-        <td>前向输出数据类型</td>
-        <td><code>bf16</code>, <code>fp16</code>, <code>fp32</code></td>
-        <td><code>none</code></td>
-        <td>输出精度控制</td>
-        </tr>
-        <tr>
-        <td><code>cast_forward_inputs</code></td>
-        <td>前向输入自动类型转换</td>
-        <td><code>true</code>/<code>false</code></td>
-        <td><code>true</code></td>
-        <td>确保输入类型匹配</td>
-        </tr>
-        <tr>
-        <td rowspan="2" style="vertical-align: middle; font-weight: bold;">模块包装</td>
-        <td><code>sub_modules_to_wrap</code></td>
-        <td>FSDP分片子模块路径</td>
-        <td>模块路径字符串列表</td>
-        <td>-</td>
-        <td>
-            <strong>模式语法</strong>:<br>
-            • <code>model.layers.{*}</code>: 匹配所有子模块<br>
-            • <code>model.layers.{0-23}</code>: 匹配层数范围<br>
-            • <code>model.layers.{1,3,5}</code>: 匹配指定层数
-        </td>
-        </tr>
-        <tr>
-        <td><code>ignored_modules</code></td>
-        <td>排除FSDP管理的模块</td>
-        <td>模块路径字符串列表</td>
-        <td>-</td>
-        <td>格式同<code>sub_modules_to_wrap</code></td>
-        </tr>
-        <tr>
-        <td rowspan="5" style="vertical-align: middle; font-weight: bold;">内存优化</td>
-        <td><code>recompute_modules</code></td>
-        <td>激活值重计算模块</td>
-        <td>模块路径字符串列表</td>
-        <td>-</td>
-        <td>格式同<code>sub_modules_to_wrap</code><br><strong>冲突避免</strong>: 需关闭Megatron重计算功能</td>
-        </tr>
-        <tr>
-        <td><code>use_reentrant</code></td>
-        <td>检查点实现类型</td>
-        <td><code>true</code>/<code>false</code></td>
-        <td><code>true</code></td>
-        <td>是否可重入</td>
-        </tr>
-        <tr>
-        <td><code>reshard_after_forward</code></td>
-        <td>参数重新聚合时机</td>
-        <td><code>true</code>/<code>false</code></td>
-        <td><code>true</code></td>
-        <td>
-            <code>true</code>: ZeRO3(省内存)<br>
-            <code>false</code>: ZeRO2(高性能)
-        </td>
-        </tr>
-        <tr>
-        <td><code><a href="https://docs.pytorch.org/docs/2.7/distributed.fsdp.fully_shard.html#torch.distributed.fsdp.CPUOffloadPolicy">offload_to_cpu</code></td>
-        <td>参数卸载到CPU</td>
-        <td><code>true</code>/<code>false</code></td>
-        <td><code>false</code></td>
-        <td>启用时需要设置<code>--distributed-backend<br>npu:hccl,cpu:gloo</code></td>
-        </tr>
-        <tr>
-        <td><code>pin_memory</code></td>
-        <td>锁定CPU内存</td>
-        <td><code>true</code>/<code>false</code></td>
-        <td><code>false</code></td>
-        <td>仅<code>offload_to_cpu=true</code>时生效</td>
-        </tr>
-        <tr>
-        <td rowspan="2" style="vertical-align: middle; font-weight: bold;">性能调优</td>
-        <td><code><a href="https://docs.pytorch.org/docs/2.7/distributed.fsdp.fully_shard.html#torch.distributed.fsdp.FSDPModule.set_modules_to_forward_prefetch">num_to_forward_prefetch</code></td>
-        <td>前向预取层数</td>
-        <td>整数值</td>
-        <td>0</td>
-        <td>通信与计算重叠优化</td>
-        </tr>
-        <tr>
-        <td><code><a href="https://docs.pytorch.org/docs/2.7/distributed.fsdp.fully_shard.html#torch.distributed.fsdp.FSDPModule.set_modules_to_backward_prefetch">num_to_backward_prefetch</code></td>
-        <td>反向预取层数</td>
-        <td>整数值</td>
-        <td>1</td>
-        <td>通信与计算重叠优化</td>
-        </tr>
-    </tbody>
-    </table>
 
 大模型Meta初始化
 ~~~~~~~~~~~~~~~~
@@ -207,7 +82,7 @@ PyTorch的完全分片数据并行（FSDP）旨在提供一个高性能的即时
 用户自定义切分策略（可选）
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-对于模型结构复杂或不便于通过YAML配置的场景，用户可以通过FSDP2Mixin提供的接口自定义切分策略，yaml文件中仅提供\ ``基本配置``\ 即可：
+对于模型结构复杂或不便于通过YAML配置的场景，用户可以通过FSDP2Mixin提供的接口自定义切分策略，yaml文件中仅提供 ``基本配置``即可：
 
 **自定义fully_shard示例**
 
@@ -216,7 +91,7 @@ PyTorch的完全分片数据并行（FSDP）旨在提供一个高性能的即时
    from mindspeed_mm.models.common.module import MultiModalModule
    from mindspeed_mm.models.transformers.base_model import FSDP2Mixin, WeightInitMixin
 
-   class YourModel(MultiModalModule, FSDP2Mixin, WeightInitMixin)：
+   class YourModel(MultiModalModule, FSDP2Mixin, WeightInitMixin):
        def _fully_shard(self, fsdp2_kwargs=None, fsdp2_config=None):
            """
            自定义fully_shard实现
