@@ -491,7 +491,7 @@ Ulysses在增加计算设备和序列长度时能保持恒定的通信量，而R
 
 .. note:: 
     * 需要确保 ``--context-parallel-size`` 参数的数值可以被 ``--ulysses-degree-in-cp`` 整除，例如当设置 ``--context-parallel-size 8`` ``--ulysses-degree-in-cp 2`` 时，此时ring cp并行度为4。
-    * 需要确保 ``--ulysses-degree-in-cp * --tensor-parallel-size`` 可以被num-attention-heads数整除
+    * 需要确保 ``--ulysses-degree-in-cp * --tensor-model-parallel-size`` 可以被num-attention-heads数整除
 
 
 TP-SP
@@ -533,7 +533,7 @@ TP-SP是Megatron-LM框架最早提出的一种序列并行技术，是基于Mega
                 <tbody>
                     <tr>
                         <td>
-                            <span class="param-name">--tensor-parallel-size [int]</span>
+                            <span class="param-name">--tensor-model-parallel-size [int]</span>
                         </td>
                         <td>
                             <span class="required">必选</span>，设置TP并行度，SP和TP同并行度。

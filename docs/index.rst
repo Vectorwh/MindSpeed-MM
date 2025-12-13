@@ -50,6 +50,7 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    config/训练参数
    config/fsdp2配置
    config/工具配置
+   config/环境变量
 
 .. toctree::
    :maxdepth: 2

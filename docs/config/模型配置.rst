@@ -3,7 +3,7 @@
 
 以 `examples/wan2.2/A14B/t2v/pretrain_model_high.json <https://gitcode.com/Ascend/MindSpeed-MM/blob/master/examples/wan2.2/A14B/t2v/pretrain_model_high.json>`_ 为例
 
-.. code:: 
+.. code:: json
 
     {
         "load_video_features": false,                           是否直接加载 vae 编码后的 video 特征
