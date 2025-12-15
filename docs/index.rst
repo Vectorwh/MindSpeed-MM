@@ -39,6 +39,7 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    features/序列并行
    features/async-offload
    features/online-data-balance
+   features/tp
 
 .. toctree::
    :maxdepth: 2
