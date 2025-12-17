@@ -51,6 +51,5 @@ PyTorch+TorchNPU安装
 
     conda create -n test python=3.10
     conda activate test
-    # 注：若需安装torch2.6.0版本需要修改列对应whl包，并且修改 MindSpeed-MM/pyproject.toml中的torch版本为2.6.0
     pip install torch-2.7.1-cp310-cp310*.whl 
     pip install torch_npu-2.7.1*-cp310-cp310*.whl

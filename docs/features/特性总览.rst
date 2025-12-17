@@ -1,6 +1,8 @@
 特性总览
 ========
 
+【待完善】
+
 .. raw:: html
 
     <!DOCTYPE html>

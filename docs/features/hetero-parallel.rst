@@ -1,4 +1,4 @@
-Hetero Parallel
+hetero-parallel
 ===============
 
 Last updated: 12/08/2025. Author: Shangda-Yang

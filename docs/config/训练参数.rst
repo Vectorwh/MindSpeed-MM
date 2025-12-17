@@ -189,6 +189,13 @@
                 <td><code>$(($MBS*$GRAD_ACC_STEP*$DP))</code></td>
                 <td>-</td>
             </tr>
+            <tr>
+                <td><code>--num-workers</code></td>
+                <td>GBS设置</td>
+                <td>整数值</td>
+                <td><code>$(($MBS*$GRAD_ACC_STEP*$DP))</code></td>
+                <td>-</td>
+            </tr>
         </tbody>
         </table>
     </body>

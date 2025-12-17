@@ -15,9 +15,9 @@
 
     {
         "profile": {
-            "enable": false,                     是否开启profiling采集
-            "profile_type": "static",            动态或静态的profiling采集类型, static / dynamic
-            "ranks": [0, 1, 2, 3],               profiling采集的rank, -1 为采集全部rank
+            "enable": false,                     // 是否开启profiling采集
+            "profile_type": "static",            // 动态或静态的profiling采集类型, static / dynamic
+            "ranks": [0, 1, 2, 3],               // profiling采集的rank, -1 为采集全部rank
         },
         ......
     }
@@ -37,16 +37,16 @@ Static Profile静态采集功能为执行模型训练过程中的指定的steps�
         "profile": {
             ......
             "static_param": {
-                "level": "level1",                            profiling采集的level选择: level0, level1, level2
-                "with_stack": false,                          是否采集算子调用栈
-                "with_memory": false,                         是否采集内存占用情况
-                "record_shapes": false,                       是否采集算子的InputShapes和InputTypes
-                "with_cpu": true,                             是否采集CPU信息
-                "save_path": "./npu_profiling",               profiling的保存路径
-                "start_step": 10,                             启动采集的步数
-                "end_step": 11,                               结束采集的步数
-                "data_simplification": false,                 是否采用简化数据
-                "aic_metrics_type": "PipeUtilization"         采集模式，目前支持PipeUtilization和ArithmeticUtilization两种，默认采用PipeUtilization
+                "level": "level1",                            // profiling采集的level选择: level0, level1, level2
+                "with_stack": false,                          // 是否采集算子调用栈
+                "with_memory": false,                         // 是否采集内存占用情况
+                "record_shapes": false,                       // 是否采集算子的InputShapes和InputTypes
+                "with_cpu": true,                             // 是否采集CPU信息
+                "save_path": "./npu_profiling",               // profiling的保存路径
+                "start_step": 10,                             // 启动采集的步数
+                "end_step": 11,                               // 结束采集的步数
+                "data_simplification": false,                 // 是否采用简化数据
+                "aic_metrics_type": "PipeUtilization"         // 采集模式，目前支持PipeUtilization和ArithmeticUtilization两种，默认采用PipeUtilization
             },
             ......
         },

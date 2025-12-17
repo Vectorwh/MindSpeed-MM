@@ -193,7 +193,7 @@ Step3: 模型构建
 
 MindSpeed-MM 中提供了一个SoRAModel作为所有扩散视频生成模型的组合类，模型继承关系如下。SoRAModel是一个组合类，可以实例化成Wan、HunyuanVideo等具体的模型，由TextEncoder、PredictModel、DiffusionModel、AEModel多个部件组成。
 
-.. image:: ../_static/dev_guide/sora_model.png
+.. image:: ../_static/dev_guide/new_model_dev/sora_model.png
     :width: 800px
     :align: center
 

@@ -6,21 +6,21 @@
 .. code:: json
 
     {
-        "load_video_features": false,                           是否直接加载 vae 编码后的 video 特征
-        "load_text_features": false,                            是否直接加载 text_encoder 编码后的 text_embeds
+        "load_video_features": false,                           // 是否直接加载 vae 编码后的 video 特征
+        "load_text_features": false,                            // 是否直接加载 text_encoder 编码后的 text_embeds
         "task": "t2v",
-        "diffusion": {                                          diffusion 模型配置
-            "model_id": "wan_flow_match_scheduler",             model_id 用于模型类映射，mindspeed_mm/models/diffusion/diffusion_model/DIFFUSION_MODEL_MAPPINGS
-            "num_train_timesteps": 1000,                        下面几行参数为实际的 DiffusionModel 的初始化参数
+        "diffusion": {                                          // diffusion 模型配置
+            "model_id": "wan_flow_match_scheduler",             // model_id 用于模型类映射，mindspeed_mm/models/diffusion/diffusion_model/DIFFUSION_MODEL_MAPPINGS
+            "num_train_timesteps": 1000,                        // 下面几行参数为实际的 DiffusionModel 的初始化参数
             "shift": 5,
             "sigma_min": 0.0,
             "extra_one_step": true,
             "max_timestep_boundary": 0.417,
             "min_timestep_boundary": 0.0
         },
-        "predictor": {                                           DiT模型配置
-            "model_id": "wandit",                                model_id 用于模型类映射，mindspeed_mm/models/predictor/predict_model/PREDICTOR_MODEL_MAPPINGS
-            "dtype": "bf16",                                     下面几行参数为实际的 PredictModel 的初始化参数
+        "predictor": {                                           // DiT模型配置
+            "model_id": "wandit",                                // model_id 用于模型类映射，mindspeed_mm/models/predictor/predict_model/PREDICTOR_MODEL_MAPPINGS
+            "dtype": "bf16",                                     // 下面几行参数为实际的 PredictModel 的初始化参数
             "model_type": "t2v",
             "patch_size": [1, 2, 2],
             "text_len": 512,
@@ -42,10 +42,10 @@
             "attention_async_offload": false,
             "use_fused_rmsnorm":true
         },
-        "ae": {                                                   AE 模型配置
-            "model_id": "wan_video_vae",                          model_id 用于模型类映射，mindspeed_mm/ae/base/AE_MODEL_MAPPINGS
-            "from_pretrained": "Wan2.2-T2V-A14B-Diffusers/vae",   AE 模型权重加载路径
-            "dtype": "bf16",                                      下面几行参数为实际的 AEModel 的初始化参数
+        "ae": {                                                   // AE 模型配置
+            "model_id": "wan_video_vae",                          // model_id 用于模型类映射，mindspeed_mm/ae/base/AE_MODEL_MAPPINGS
+            "from_pretrained": "Wan2.2-T2V-A14B-Diffusers/vae",   // AE 模型权重加载路径
+            "dtype": "bf16",                                      // 下面几行参数为实际的 AEModel 的初始化参数
             "enable_tiling": false,
             "tiling_param": {
                 "tile_sample_min_height": 256,
@@ -57,17 +57,17 @@
             "norm_mode": "channel_specified_shift_scale",
             "do_sample": false
         },
-        "text_encoder": {                                                TextEncoder 模型配置
-            "model_id": "UMT5",                                          model_id 需要配置成实际的transformers模型类
+        "text_encoder": {                                                // TextEncoder 模型配置
+            "model_id": "UMT5",                                          // model_id 需要配置成实际的transformers模型类
             "dtype": "bf16",                     
-            "hub_backend": "hf",                                         hf 后端
-            "from_pretrained": "Wan2.2-T2V-A14B-Diffusers/text_encoder"  TextEncoder模型权重和配置加载路径
+            "hub_backend": "hf",                                         // hf 后端
+            "from_pretrained": "Wan2.2-T2V-A14B-Diffusers/text_encoder"  // TextEncoder模型权重和配置加载路径
         }
-        "patch": {                                                       patch
+        "patch": {                                                       // patch
             "clip_grad_async": true,
             "get_dist_model_load_from_pt": true
         },
-        "encoder_offload_interval": 8,                                   encoder_offload_interval 优化特性配置 
+        "encoder_offload_interval": 8,                                   // encoder_offload_interval 优化特性配置 
     }
 
 
