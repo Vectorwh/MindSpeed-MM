@@ -154,7 +154,7 @@
             </tr>
             
             <tr>
-                <td rowspan="5" style="vertical-align: middle; font-weight: bold;">GPT_ARGS</td>
+                <td rowspan="17" style="vertical-align: middle; font-weight: bold;">GPT_ARGS</td>
                 <td><code>--use-mcore-models</code></td>
                 <td>使用mcore模型</td>
                 <td>-</td>
@@ -191,12 +191,93 @@
             </tr>
             <tr>
                 <td><code>--num-workers</code></td>
-                <td>GBS设置</td>
+                <td>数据dataloader的进程数</td>
                 <td>整数值</td>
-                <td><code>$(($MBS*$GRAD_ACC_STEP*$DP))</code></td>
+                <td><code>1</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--lr</code></td>
+                <td>最大学习率</td>
+                <td>浮点数</td>
+                <td><code>-</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--min-lr</code></td>
+                <td>最小学习率</td>
+                <td>浮点数</td>
+                <td><code>-</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--adam-beta1</code></td>
+                <td>Adam优化器一阶矩超参数</td>
+                <td>浮点数</td>
+                <td><code>0.9</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--adam-beta2</code></td>
+                <td>Adam优化器二阶矩超参数</td>
+                <td>浮点数</td>
+                <td><code>0.999</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--adam-eps</code></td>
+                <td>adam_epsilon，防止分母为零</td>
+                <td>浮点数</td>
+                <td><code>1e-8</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--lr-decay-style</code></td>
+                <td>学习率衰减策略</td>
+                <td><code>constant</code>, <code>linear</code>, <code>cosine</code>, <code>inverse-square-root</code>, <code>WSD</code></td>
+                <td><code>linear</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--weight-decay</code></td>
+                <td>L2 正则化的超参数，用于防止模型过拟合</td>
+                <td>浮点数</td>
+                <td><code>0.1</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--lr-warmup-init</code></td>
+                <td>学习率预热的初始值</td>
+                <td>浮点数</td>
+                <td><code>0.0</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--lr-warmup-iters</code></td>
+                <td>学习率线性预热的迭代步数参数</td>
+                <td>整数</td>
+                <td><code>0</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--clip-grad</code></td>
+                <td>梯度裁剪的超参数</td>
+                <td>浮点数</td>
+                <td><code>1.0</code></td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>--train-iters</code></td>
+                <td>训练迭代次数</td>
+                <td>整数</td>
+                <td><code>-</code></td>
                 <td>-</td>
             </tr>
         </tbody>
         </table>
     </body>
     </html>
+
+
+.. note::
+    更多Megatron和MindSpeed args可以参考 ``megatron/training/arguments.py`` 和 ``mindspeed/arguments.py``
