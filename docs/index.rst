@@ -15,14 +15,14 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
 - **基于高性能昇腾底座MindSpeed-Core**：基于昇腾高性能分布式加速库MindSpeed-Core提供丰富的并行，内存，通信，计算优化能力，更多亲和优化，增强多模态场景加速能力
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: QuickStart:
 
    quick_start/环境搭建
    quick_start/快速实践
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: 开发指南:
 
    dev_guide/框架结构介绍
@@ -36,13 +36,13 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    features/特性总览
    features/fsdp2
    features/hetero-parallel
-   features/序列并行
+   features/sequence-parallel
    features/async-offload
    features/online-data-balance
-   features/tp
+   features/tensor-parallel
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: 配置说明:
 
    config/配置概览
@@ -54,7 +54,7 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    config/环境变量
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: 调优指南:
 
    tuning/显存调优
@@ -62,7 +62,7 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    tuning/调优案例
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: API参考:
 
    api/overview
@@ -71,7 +71,7 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    api/data
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: FAQ:
 
    faq/常见问题

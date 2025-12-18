@@ -1,4 +1,4 @@
-tp
+tensor-parallel
 ===========================
 
 Last updated: 12/13/2025. Author: yaoyaoxu

@@ -40,8 +40,8 @@ CANN安装
     source /usr/local/Ascend/ascend-toolkit/set_env.sh
     source /usr/local/Ascend/nnal/atb/set_env.sh
 
-PyTorch+TorchNPU安装    
-:::::::::::::::::::::
+PyTorch+torch_npu 安装    
+::::::::::::::::::::::::::
 
 下载 `torch_npu <https://www.hiascend.com/developer/download/community/result?module=pt>`_ ，参考 `Ascend Extension for PyTorch 配置与安装 <https://www.hiascend.com/document/detail/zh/Pytorch/720/configandinstg/instg/insg_0004.html>`_ 或执行以下命令安装：
 

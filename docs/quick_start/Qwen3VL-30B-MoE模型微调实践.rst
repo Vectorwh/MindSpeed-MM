@@ -45,34 +45,25 @@ Step 1: 搭建开发环境
     pip install [CANN_HOME_PATH]/ascend-toolkit/latest/lib64/te-*-py3-none-any.whl
 
 4. 按照下面的步骤安装MindSpeed-MM及其依赖包：
-    
+
+拉取MindSpeed MM代码仓，并进入代码仓根目录：
+
 .. code:: bash
 
     git clone https://gitcode.com/Ascend/MindSpeed-MM.git
-    git clone https://github.com/NVIDIA/Megatron-LM.git
-    cd Megatron-LM
-    git checkout core_v0.12.1
-    cp -r megatron ../MindSpeed-MM/
-    cd ..
     cd MindSpeed-MM
-    mkdir logs data ckpt
 
-    # 安装加速库
-    git clone https://gitcode.com/Ascend/MindSpeed.git
-    cd MindSpeed
-    # checkout commit from MindSpeed core_r0.12.1
-    git checkout 93c45456c7044bacddebc5072316c01006c938f9
-    # 安装mindspeed及依赖
-    pip install -e .
-    cd ..
+对于X86架构机器，执行如下指令：
 
-    # 安装mindspeed mm及依赖
-    pip install -e .
-    # 安装新版transformers（支持qwen3vl模型）
-    git clone https://github.com/huggingface/transformers.git
-    cd transformers
-    git checkout c0dbe09
-    pip install -e .
+.. code:: bash
+
+    bash scripts/install.sh --arch x86 --msid d76dbddd4517d48a2fc1cd494de8b9a6cfdbfbab&& pip install -r examples/qwen3vl/requirements.txt
+
+对于ARM架构机器，执行如下指令：
+
+.. code:: bash
+
+    bash scripts/install.sh --arch arm --msid d76dbddd4517d48a2fc1cd494de8b9a6cfdbfbab&& pip install -r examples/qwen3vl/requirements.txt
 
 
 Step 2: 权重下载及转换

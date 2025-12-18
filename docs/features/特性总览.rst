@@ -351,7 +351,7 @@
                     <tbody>
                         <!-- 并行特性 - PP并行 -->
                         <tr>
-                            <td rowspan="6" class="category-cell">并行特性</td>
+                            <td rowspan="7" class="category-cell">并行特性</td>
                             <td rowspan="3" class="subcategory-cell">PP并行</td>
                             <td class="feature-name">PP</td>
                             <td class="status-cell"><span class="status-released">已发布</span></td>
@@ -362,6 +362,12 @@
                         </tr>
                         <tr>
                             <td class="feature-name">动态PP</td>
+                            <td class="status-cell"><span class="status-released">已发布</span></td>
+                        </tr>
+
+                        <tr>
+                            <td rowspan="1" class="subcategory-cell">TP并行</td>
+                            <td class="feature-name"><a href=https://mindspeed-mm.readthedocs.io/zh-cn/latest/features/tensor-parallel.html>tensor-parallel</td>
                             <td class="status-cell"><span class="status-released">已发布</span></td>
                         </tr>
                         
