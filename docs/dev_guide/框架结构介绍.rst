@@ -16,7 +16,7 @@ MindSpeed MM 昇腾多模态训练解决方案整体架构如下图，整体分�
 
 .. image:: ../_static/dev_guide/mm_introduction/MindSpeed-MM-architecture.png
     :width: 800px
-    :align: left
+    :align: center
 
 
 模块介绍
