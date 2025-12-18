@@ -12,6 +12,11 @@ Last updated: 12/08/2025. Author: cxiaolong
 该流程主要包含环境搭建、数据集构建、模型构建、配置文件、训练入口、训练脚本、启动训练。
 
 
+.. image:: ../_static/dev_guide/new_model_dev/flow.png
+    :width: 1200px
+    :align: left
+
+
 Step1: 环境搭建
 -------------------
 
