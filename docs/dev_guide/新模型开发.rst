@@ -14,7 +14,7 @@ Last updated: 12/08/2025. Author: cxiaolong
 
 .. image:: ../_static/dev_guide/new_model_dev/flow.png
     :width: 1200px
-    :align: left
+    :align: center
 
 
 Step1: 环境搭建

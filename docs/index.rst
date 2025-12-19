@@ -66,9 +66,6 @@ MindSpeed-MM是面向大规模分布式训练的昇腾多模态大模型套件�
    :caption: API参考:
 
    api/overview
-   api/pretrain
-   api/model
-   api/data
 
 .. toctree::
    :maxdepth: 1
